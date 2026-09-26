@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -35,6 +37,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final authState = ref.watch(authControllerProvider);
 
     ref.listen(authControllerProvider, (previous, next) {
@@ -44,7 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Créer un compte')),
+      appBar: AppBar(title: Text(l10n.register)),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -52,35 +55,45 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _usernameCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Nom d'utilisateur",
-                  border: OutlineInputBorder(),
+              Semantics(
+                textField: true,
+                label: l10n.username,
+                child: TextFormField(
+                  controller: _usernameCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.username,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v == null || v.isEmpty) ? l10n.requiredField : null,
                 ),
-                validator: (v) => (v == null || v.isEmpty) ? 'Champ requis' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
+              Semantics(
+                textField: true,
+                label: l10n.email,
+                child: TextFormField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: l10n.email,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v == null || !v.contains('@')) ? l10n.invalidEmail : null,
                 ),
-                validator: (v) =>
-                    (v == null || !v.contains('@')) ? 'Email invalide' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Mot de passe',
-                  border: OutlineInputBorder(),
+              Semantics(
+                textField: true,
+                label: l10n.password,
+                child: TextFormField(
+                  controller: _passwordCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.password,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v == null || v.length < 6) ? l10n.passwordTooShort : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.length < 6) ? 'Minimum 6 caractères' : null,
               ),
               const SizedBox(height: 24),
               if (authState.hasError)
@@ -92,15 +105,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-              FilledButton(
-                onPressed: authState.isLoading ? null : _submit,
-                child: authState.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text("S'inscrire"),
+              Semantics(
+                button: true,
+                label: l10n.registerButton,
+                enabled: !authState.isLoading,
+                child: FilledButton(
+                  onPressed: authState.isLoading ? null : _submit,
+                  child: authState.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.registerButton),
+                ),
               ),
             ],
           ),

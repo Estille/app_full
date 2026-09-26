@@ -1,6 +1,7 @@
 /// Exceptions levées par les datasources (remote/local).
 /// Elles sont attrapées puis converties en [Failure] dans le repository —
 /// la couche datasource ne connaît pas les Failures.
+library;
 
 class ServerException implements Exception {
   final String message;

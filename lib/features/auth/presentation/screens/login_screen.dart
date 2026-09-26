@@ -1,84 +1,88 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import '../../../../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+/// HookConsumerWidget : `useTextEditingController` / `useState` évitent de
+/// gérer un `StatefulWidget` + `dispose()` manuel, et surtout ne
+/// reconstruisent que la portion d'UI qui dépend de l'état modifié —
+/// c'est la réponse concrète à l'exigence "pas de rebuilds inutiles".
+class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final formKey = useMemoized(() => GlobalKey<FormState>());
+    // Identifiants de test DummyJSON pré-remplis pour la démo
+    final usernameCtrl = useTextEditingController(text: 'emilys');
+    final passwordCtrl = useTextEditingController(text: 'emilyspass');
+    final obscure = useState(true);
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  // Identifiants de test fournis par DummyJSON (https://dummyjson.com/users)
-  final _usernameCtrl = TextEditingController(text: 'emilys');
-  final _passwordCtrl = TextEditingController(text: 'emilyspass');
-  bool _obscure = true;
-
-  @override
-  void dispose() {
-    _usernameCtrl.dispose();
-    _passwordCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    await ref
-        .read(authControllerProvider.notifier)
-        .login(_usernameCtrl.text.trim(), _passwordCtrl.text.trim());
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final isLoading = authState.isLoading;
 
-    // Redirige dès que l'utilisateur est connecté
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
         context.go('/products');
       }
     });
 
-    final isLoading = authState.isLoading;
+    Future<void> submit() async {
+      if (!formKey.currentState!.validate()) return;
+      await ref
+          .read(authControllerProvider.notifier)
+          .login(usernameCtrl.text.trim(), passwordCtrl.text.trim());
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Connexion')),
+      appBar: AppBar(title: Text(l10n.login)),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Icon(Icons.lock_person_outlined, size: 64),
               const SizedBox(height: 24),
-              TextFormField(
-                controller: _usernameCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Nom d'utilisateur",
-                  border: OutlineInputBorder(),
+              Semantics(
+                textField: true,
+                label: l10n.username,
+                child: TextFormField(
+                  controller: usernameCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.username,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v == null || v.isEmpty) ? l10n.requiredField : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Champ requis' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordCtrl,
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  labelText: 'Mot de passe',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+              Semantics(
+                textField: true,
+                label: l10n.password,
+                child: TextFormField(
+                  controller: passwordCtrl,
+                  obscureText: obscure.value,
+                  decoration: InputDecoration(
+                    labelText: l10n.password,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: Semantics(
+                      button: true,
+                      label: obscure.value ? l10n.showPassword : l10n.hidePassword,
+                      child: IconButton(
+                        icon: Icon(obscure.value ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => obscure.value = !obscure.value,
+                      ),
+                    ),
                   ),
+                  validator: (v) => (v == null || v.isEmpty) ? l10n.requiredField : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Champ requis' : null,
               ),
               const SizedBox(height: 24),
               if (authState.hasError)
@@ -90,19 +94,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-              FilledButton(
-                onPressed: isLoading ? null : _submit,
-                child: isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Se connecter'),
+              Semantics(
+                button: true,
+                label: l10n.loginButton,
+                enabled: !isLoading,
+                child: FilledButton(
+                  onPressed: isLoading ? null : submit,
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.loginButton),
+                ),
               ),
               TextButton(
                 onPressed: () => context.push('/register'),
-                child: const Text("Pas de compte ? S'inscrire"),
+                child: Text(l10n.noAccount),
               ),
             ],
           ),

@@ -1,6 +1,6 @@
 # App Full — Backend Connected App
 
-![CI](https://github.com/<ton-user>/<ton-repo>/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Estille/app_full2/actions/workflows/ci.yml/badge.svg)
 ![Flutter](https://img.shields.io/badge/Flutter-3.19%2B-02569B?logo=flutter)
 ![License](https://img.shields.io/badge/license-MIT-informational)
 
